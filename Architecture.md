@@ -1,9 +1,8 @@
-
-# NovaQR Studio - Architecture & Flow Documentation
+# SmartQR - Architecture & Flow Documentation
 
 ## 1. Technology Stack
 
-*   **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+*   **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
 *   **Language**: TypeScript
 *   **Styling**: Tailwind CSS v4
 *   **Runtime/Package Manager**: Bun
@@ -42,18 +41,14 @@
 
 ## 3. Core Data Flow & State Management
 
-The application uses **URL-based State Management** instead of global state stores (like Redux or Context). This ensures that the configuration is always shareable and persistent across reloads.
+The application uses **Redux Toolkit** for state management, ensuring centralized and predictable state updates across the application.
 
-### The `useQRSettings` Hook
-Located in `hooks/useQRSettings.ts`.
+### Redux Store
+Located in `store/`.
 
-1.  **Read State**: It reads the `config` query parameter from the URL.
-    *   The `config` param is a Base64 encoded JSON string of the `QRSettings` object.
-    *   If no config is present, it falls back to `DEFAULT_SETTINGS`.
-2.  **Write State**: When `updateSettings` is called:
-    *   It merges the new updates with the current settings.
-    *   It serializes the new object to JSON -> Base64.
-    *   It updates the URL using `router.replace` (without reloading the page).
+1.  **State Structure**: QR settings are stored in Redux store (`qrSettingsSlice`)
+2.  **State Updates**: Actions like `updateSettings` and `resetSettings` manage state changes
+3.  **Persistence**: State persists during the session
 
 ### Flow Lifecycle
 
@@ -88,7 +83,7 @@ Located in `hooks/useQRSettings.ts`.
 5.  **Step 3: Design (`/create/design`)**:
     *   Renders `StepDesign`.
     *   User adjusts colors, shapes, frames.
-    *   All changes update the URL params instantly.
+    *   All changes update the Redux state instantly.
 
 6.  **Preview & Export**:
     *   `PreviewCard.tsx` listens to `settings` changes.
@@ -99,7 +94,7 @@ Located in `hooks/useQRSettings.ts`.
 ## 4. Key Technical Decisions
 
 *   **Server Actions for CORS**: Browsers block fetching images from different domains (CORS) when trying to draw them on a canvas (tainted canvas). We use a Next.js Server Action (`fetchLogo`) to act as a proxy, fetching the image on the server and returning a base64 string to the client.
-*   **URL State**: Eliminates the need for complex state management libraries and enables "Copy URL to Share" functionality out of the box.
+*   **Redux Toolkit**: Centralized state management for QR settings, ensuring predictable state updates and easy debugging.
 *   **Component Composition**: The `ControlPanel` was decomposed into smaller `Step*` components to improve maintainability and separation of concerns.
 *   **Tailwind v4**: Uses the latest CSS-in-JS approach for performant styling.
 
@@ -107,10 +102,11 @@ Located in `hooks/useQRSettings.ts`.
 
 *   **`app/create/layout.tsx`**: The "Brain" of the creation flow. It handles the layout, the sticky preview, and the navigation logic (Next/Prev buttons).
 *   **`components/PreviewCard.tsx`**: The "View". It is a pure component that takes `settings` as a prop and renders the QR code. It handles the complexity of the `qr-code-styling` library.
-*   **`services/geminiService.ts`**: (Experimental) Setup for using Google Gemini AI to suggest branding colors based on the URL.
+*   **`app/actions.ts`**: Server actions for AI suggestions (Google Gemini) and logo fetching.
 
 ## 6. Future Improvements
 
-*   **AI Integration**: Fully connect the `geminiService` to the Branding step to auto-suggest colors.
-*   **User Accounts**: Save configurations to a database instead of just the URL.
-*   **Analytics**: Track scan rates for generated QR codes.
+*   **Analytics**: Track scan rates for generated QR codes
+*   **Export Options**: Additional export formats (SVG, PDF)
+*   **Templates**: Pre-designed QR code templates
+*   **Bulk Generation**: Generate multiple QR codes at once

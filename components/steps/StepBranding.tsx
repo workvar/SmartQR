@@ -37,40 +37,123 @@ export const StepBranding: React.FC<StepBrandingProps> = ({ settings, onUpdate, 
         }
     };
 
-    const fetchBrandLogo = async () => {
-        if (!settings.url) return;
-        setIsFetchingLogo(true);
+    const isValidUrl = (url: string): boolean => {
         try {
-            let domain = settings.url.trim();
-            if (!domain.startsWith('http')) domain = 'https://' + domain;
-            const host = new URL(domain).hostname;
-            const logoUrl = `https://logo.clearbit.com/${host}?size=512`;
+            const trimmed = url.trim();
+            if (!trimmed) return false;
+            
+            // Must start with http:// or https://
+            if (!trimmed.match(/^https?:\/\//i)) {
+                return false;
+            }
+            
+            // Try to create URL object
+            const urlObj = new URL(trimmed);
+            
+            // Must have a valid hostname
+            const hostname = urlObj.hostname;
+            if (!hostname) return false;
+            
+            // Must have a valid TLD (top-level domain)
+            // Check for at least one dot and a TLD with 2+ characters
+            const tldPattern = /\.[a-z]{2,}$/i;
+            if (!tldPattern.test(hostname)) {
+                return false;
+            }
+            
+            // Additional check: hostname should not be just an IP address without TLD
+            // But allow IP addresses if they're valid
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (ipPattern.test(hostname)) {
+                // IP addresses are technically valid but we'll require domain names for logo fetching
+                return false;
+            }
+            
+            return true;
+        } catch {
+            return false;
+        }
+    };
 
-            // Use server action to bypass CORS
+    const fetchBrandLogo = async () => {
+        if (!settings.url || !isValidUrl(settings.url)) {
+            setToast({ 
+                message: "Please enter a valid URL (e.g., https://example.com) to fetch logo.", 
+                type: 'error' 
+            });
+            setTimeout(() => setToast(null), 4000);
+            return;
+        }
+        
+        setIsFetchingLogo(true);
+        setToast(null); // Clear any previous toast
+        
+        try {
+            const domain = settings.url.trim();
+            const host = new URL(domain).hostname;
+            
+            // Try Clearbit logo API first
+            const logoUrl = `https://logo.clearbit.com/${host}?size=512`;
             const { fetchLogo } = await import('@/app/actions');
             let base64 = await fetchLogo(logoUrl);
 
             if (base64) {
                 onUpdate({ logoUrl: base64 });
                 setIsFetchingLogo(false);
-                setToast({ message: `Fetched asset for ${host}`, type: 'info' });
-            } else {
-                const fallbackUrl = `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
-                base64 = await fetchLogo(fallbackUrl);
-
-                if (base64) {
-                    onUpdate({ logoUrl: base64 });
-                } else {
-                    setToast({ message: "Could not fetch logo. Please upload manually.", type: 'error' });
-                }
-                setIsFetchingLogo(false);
+                setToast({ 
+                    message: `Successfully fetched logo for ${host}`, 
+                    type: 'info' 
+                });
+                setTimeout(() => setToast(null), 4000);
+                return;
             }
-            setTimeout(() => setToast(null), 4000);
-        } catch (error) {
-            console.error(error);
+
+            // Fallback to Google favicon API
+            const fallbackUrl = `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
+            base64 = await fetchLogo(fallbackUrl);
+
+            if (base64) {
+                onUpdate({ logoUrl: base64 });
+                setIsFetchingLogo(false);
+                setToast({ 
+                    message: `Fetched favicon for ${host}`, 
+                    type: 'info' 
+                });
+                setTimeout(() => setToast(null), 4000);
+                return;
+            }
+
+            // Both methods failed
             setIsFetchingLogo(false);
-            setToast({ message: "Fetch failed. Try manual upload.", type: 'error' });
-            setTimeout(() => setToast(null), 4000);
+            setToast({ 
+                message: `Could not find a logo for ${host}. Please upload manually or try a different URL.`, 
+                type: 'error' 
+            });
+            setTimeout(() => setToast(null), 5000);
+            
+        } catch (error) {
+            console.error('Logo fetch error:', error);
+            setIsFetchingLogo(false);
+            
+            // Provide more specific error messages
+            let errorMessage = "Failed to fetch logo. ";
+            if (error instanceof Error) {
+                if (error.message.includes('fetch')) {
+                    errorMessage += "Network error occurred. Please check your connection and try again.";
+                } else if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+                    errorMessage += "CORS error. Please upload the logo manually.";
+                } else {
+                    errorMessage += "Please try uploading manually.";
+                }
+            } else {
+                errorMessage += "Please upload the logo manually.";
+            }
+            
+            setToast({ 
+                message: errorMessage, 
+                type: 'error' 
+            });
+            setTimeout(() => setToast(null), 5000);
         }
     };
 
@@ -91,17 +174,23 @@ export const StepBranding: React.FC<StepBrandingProps> = ({ settings, onUpdate, 
                             <span className="text-xs font-bold uppercase tracking-widest text-center">Upload File</span>
                             <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                         </label>
-                        <button
-                            onClick={fetchBrandLogo}
-                            className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[2rem] transition-all ${isDark ? 'border-blue-500/20 hover:border-blue-500/50' : 'border-blue-600/10 hover:border-blue-600/30'}`}
-                        >
-                            {isFetchingLogo ? (
-                                <ArrowPathIcon className="w-6 h-6 animate-spin text-blue-600" />
-                            ) : (
-                                <CloudArrowDownIcon className="w-6 h-6 text-blue-600" />
-                            )}
-                            <span className="text-xs font-bold uppercase tracking-widest text-blue-600 text-center">Smart Fetch</span>
-                        </button>
+                        {(() => {
+                            const urlValid = settings.url && isValidUrl(settings.url);
+                            return urlValid ? (
+                                <button
+                                    onClick={fetchBrandLogo}
+                                    disabled={isFetchingLogo}
+                                    className={`flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-[2rem] transition-all ${isDark ? 'border-blue-500/20 hover:border-blue-500/50' : 'border-blue-600/10 hover:border-blue-600/30'}`}
+                                >
+                                    {isFetchingLogo ? (
+                                        <ArrowPathIcon className="w-6 h-6 animate-spin text-blue-600" />
+                                    ) : (
+                                        <CloudArrowDownIcon className="w-6 h-6 text-blue-600" />
+                                    )}
+                                    <span className="text-xs font-bold uppercase tracking-widest text-blue-600 text-center">Smart Fetch</span>
+                                </button>
+                            ) : null;
+                        })()}
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -20,7 +20,7 @@ export const StepContent: React.FC<StepContentProps> = ({ settings, onUpdate, is
                     value={settings.url}
                     onChange={(e) => onUpdate({ url: e.target.value })}
                     placeholder="https://yourlink.com"
-                    className="w-full text-2xl lg:text-3xl font-bold bg-transparent outline-none placeholder-current placeholder-opacity-10"
+                    className="w-full text-2xl lg:text-3xl font-bold bg-transparent outline-none placeholder:text-muted-foreground"
                 />
             </div>
         </div>

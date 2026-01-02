@@ -1,9 +1,10 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useQRSettings } from '@/hooks/useQRSettings';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { updateSettings } from '@/store/qrSettingsSlice';
 import PreviewCard from '@/components/PreviewCard';
 import { FEATURE_FLAGS } from '@/config';
 import {
@@ -14,6 +15,9 @@ import {
     ChevronDoubleRightIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { SignedIn, UserButton } from '@clerk/nextjs';
+import { saveQRCode } from '@/app/actions';
+import { useState } from 'react';
 
 const ALL_STEPS = [
     { id: 'url', title: 'Content', description: 'Enter the destination link', path: '/create/content' },
@@ -22,11 +26,61 @@ const ALL_STEPS = [
 ];
 
 export default function CreateLayout({ children }: { children: React.ReactNode }) {
-    const { settings, updateSettings } = useQRSettings();
+    const settings = useAppSelector((state: any) => state.qrSettings);
+    const dispatch = useAppDispatch();
     const pathname = usePathname();
     const router = useRouter();
+    const [isSaving, setIsSaving] = useState(false);
+    const [editingQRId, setEditingQRId] = useState<string | null>(null);
 
     const isDark = settings.theme === 'dark';
+    
+    // Check if editing existing QR
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const editingQR = sessionStorage.getItem('editingQR');
+            if (editingQR) {
+                try {
+                    const parsed = JSON.parse(editingQR);
+                    setEditingQRId(parsed.id);
+                    // Load settings if editing
+                    if (parsed.settings) {
+                        dispatch(updateSettings(parsed.settings));
+                    }
+                } catch (e) {
+                    console.error('Error parsing editing QR:', e);
+                }
+            }
+        }
+    }, [dispatch]);
+    
+    const handleUpdateSettings = (updates: Partial<typeof settings>) => {
+        dispatch(updateSettings(updates));
+    };
+
+    const handleSave = async () => {
+        if (!settings.url || settings.url.trim() === '') {
+            alert('Please enter a URL first');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const name = editingQRId ? `QR Code ${new Date().toLocaleDateString()}` : `QR Code ${new Date().toLocaleDateString()}`;
+            await saveQRCode(name, settings.url, settings, editingQRId);
+            
+            // Clear editing session
+            if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('editingQR');
+            }
+            
+            router.push('/dashboard');
+        } catch (error: any) {
+            alert(error.message || 'Failed to save QR code');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const activeSteps = useMemo(() => {
         return ALL_STEPS.filter(step => !step.flag || (FEATURE_FLAGS as any)[step.flag]);
@@ -40,23 +94,20 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
     const isStepValid = currentStep.id !== 'url' || settings.url.trim().length > 0;
 
     const toggleTheme = () => {
-        updateSettings({ theme: isDark ? 'light' : 'dark' });
+        handleUpdateSettings({ theme: isDark ? 'light' : 'dark' });
     };
 
     const handleNext = () => {
         if (currentStepIndex < activeSteps.length - 1) {
             const nextPath = activeSteps[currentStepIndex + 1].path;
-            // Preserve query params
-            const params = new URLSearchParams(window.location.search);
-            router.push(`${nextPath}?${params.toString()}`);
+            router.push(nextPath);
         }
     };
 
     const handlePrev = () => {
         if (currentStepIndex > 0) {
             const prevPath = activeSteps[currentStepIndex - 1].path;
-            const params = new URLSearchParams(window.location.search);
-            router.push(`${prevPath}?${params.toString()}`);
+            router.push(prevPath);
         }
     };
 
@@ -80,6 +131,9 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
                                 {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
                             </button>
                         )}
+                        <SignedIn>
+                            <UserButton afterSignOutUrl="/" />
+                        </SignedIn>
                     </div>
                 </div>
             </header>
@@ -140,12 +194,39 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
                                     <ChevronRightIcon className="w-4 h-4" />
                                 </button>
                             )}
+                            {isFinalStep && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving || !isStepValid}
+                                    className={`flex items-center gap-2 px-10 py-3 rounded-full font-bold text-sm transition-all shadow-xl ${isSaving || !isStepValid
+                                            ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-50'
+                                            : 'bg-green-600 hover:bg-green-500 text-white shadow-green-500/20'
+                                        }`}
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Save QR Code
+                                            <ChevronRightIcon className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     <div className="w-full lg:w-[420px] shrink-0">
                         <div className="sticky top-28">
-                            <PreviewCard settings={settings} showDownload={isFinalStep} />
+                            <PreviewCard 
+                                settings={settings} 
+                                showDownload={isFinalStep} 
+                                onUpdate={handleUpdateSettings}
+                                currentStepIndex={currentStepIndex}
+                            />
                         </div>
                     </div>
                 </div>

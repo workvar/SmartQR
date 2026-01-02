@@ -8,7 +8,11 @@ import {
     PaintBrushIcon,
     CloudArrowDownIcon,
     SunIcon,
-    MoonIcon
+    MoonIcon,
+    CheckCircleIcon,
+    CubeIcon,
+    CpuChipIcon,
+    ChartBarIcon
 } from '@heroicons/react/24/outline';
 import * as Switch from '@radix-ui/react-switch';
 
@@ -21,151 +25,301 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, isDark, toggleTheme }) => {
     const features = [
         {
-            title: 'AI Smart Fetch',
-            description: 'Automatically extract high-resolution brand assets simply by entering a domain.',
+            title: 'AI-Powered Branding',
+            description: 'Automatically extract high-resolution brand assets and color palettes from any domain using advanced AI.',
             icon: CloudArrowDownIcon,
-            color: 'text-blue-500'
+            color: isDark ? 'text-blue-400' : 'text-blue-600'
         },
         {
-            title: 'Precision Styling',
-            description: 'Granular control over pattern dots, eye geometry, and corner curvatures.',
+            title: 'Precision Design Control',
+            description: 'Granular control over pattern dots, eye geometry, corner styles, and visual aesthetics.',
             icon: PaintBrushIcon,
-            color: 'text-purple-500'
+            color: isDark ? 'text-purple-400' : 'text-purple-600'
         },
         {
-            title: 'Enterprise Safety',
-            description: 'Built-in error correction and verification ensure your QR scans every single time.',
+            title: 'Enterprise-Grade Reliability',
+            description: 'Built-in error correction and verification ensure your QR codes scan perfectly every time.',
             icon: ShieldCheckIcon,
-            color: 'text-green-500'
+            color: isDark ? 'text-green-400' : 'text-green-600'
         },
         {
-            title: 'Professional Export',
-            description: 'Download in SVG vector format, transparent PNG, or optimized JPEG for any medium.',
+            title: 'Professional Export Formats',
+            description: 'Download in SVG vector format, transparent PNG, or optimized JPEG for any production medium.',
             icon: PhotoIcon,
-            color: 'text-orange-500'
+            color: isDark ? 'text-orange-400' : 'text-orange-600'
         }
     ];
 
+    const capabilities = [
+        'Custom color schemes and gradients',
+        'Logo integration with smart positioning',
+        'Multiple pattern styles',
+        'Real-time preview and validation',
+        'Batch generation support',
+        'High-resolution vector exports'
+    ];
+
     return (
-        <div className={`min-h-screen transition-colors duration-500 flex flex-col ${isDark ? 'bg-[#020617] text-white' : 'bg-white text-slate-900'}`}>
-            <header className="h-20 flex items-center justify-between px-8 max-w-[1400px] mx-auto w-full">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-xl shadow-blue-500/20">
-                        <span className="text-white font-black text-xl">N</span>
+        <div className={`min-h-screen transition-colors duration-300 flex flex-col ${
+            isDark 
+                ? 'bg-[#1a1a1a] text-[#ffffff]' 
+                : 'bg-[#fafafa] text-[#323130]'
+        }`}>
+            {/* Header - Fluent Design Style */}
+            <header className={`sticky top-0 z-50 backdrop-blur-md transition-all duration-300 ${
+                isDark 
+                    ? 'bg-[#1a1a1a]/80 border-b border-[#3a3a3a]' 
+                    : 'bg-[#ffffff]/80 border-b border-[#edebe9]'
+            }`}>
+                <div className="max-w-[1600px] mx-auto px-8 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            isDark ? 'bg-[#0078d4]' : 'bg-[#0078d4]'
+                        }`}>
+                            <span className="text-white font-semibold text-lg">N</span>
+                        </div>
+                        <span className={`text-lg font-semibold ${
+                            isDark ? 'text-[#ffffff]' : 'text-[#323130]'
+                        }`}>NovaQR Studio</span>
                     </div>
-                    <span className="text-xl font-black tracking-tight">NovaQR</span>
-                </div>
-                <div className="flex items-center gap-6">
-                    <div className="hidden sm:flex items-center gap-3 bg-current bg-opacity-5 px-3 py-1.5 rounded-full">
-                        <SunIcon className={`w-4 h-4 ${isDark ? 'opacity-20' : 'text-orange-500'}`} />
-                        <Switch.Root
-                            checked={isDark}
-                            onCheckedChange={toggleTheme}
-                            className="w-10 h-6 bg-zinc-400/30 rounded-full relative data-[state=checked]:bg-blue-600 outline-none cursor-pointer"
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-opacity-0">
+                            <SunIcon className={`w-4 h-4 ${isDark ? 'text-[#605e5c]' : 'text-[#605e5c]'}`} />
+                            <Switch.Root
+                                checked={isDark}
+                                onCheckedChange={toggleTheme}
+                                className={`w-10 h-6 rounded-full relative outline-none cursor-pointer transition-colors ${
+                                    isDark ? 'bg-[#0078d4]' : 'bg-[#c8c6c4]'
+                                }`}
+                            >
+                                <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform translate-x-0.5 data-[state=checked]:translate-x-[18px] shadow-sm" />
+                            </Switch.Root>
+                            <MoonIcon className={`w-4 h-4 ${isDark ? 'text-[#0078d4]' : 'text-[#605e5c]'}`} />
+                        </div>
+                        <button
+                            onClick={onStart}
+                            className={`px-6 py-2.5 rounded-md font-medium text-sm transition-all ${
+                                isDark
+                                    ? 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                                    : 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                            } shadow-sm hover:shadow-md`}
                         >
-                            <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform duration-200 translate-x-0.5 data-[state=checked]:translate-x-[18px]" />
-                        </Switch.Root>
-                        <MoonIcon className={`w-4 h-4 ${!isDark ? 'opacity-20' : 'text-blue-400'}`} />
+                            Get Started
+                        </button>
                     </div>
-                    <button
-                        onClick={onStart}
-                        className="bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-blue-500 transition-all shadow-xl shadow-blue-600/20"
-                    >
-                        Create Now
-                    </button>
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col items-center">
-                {/* Hero Section */}
-                <section className="py-20 lg:py-32 px-6 text-center max-w-[1000px] mx-auto relative">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[120px] rounded-full -z-10" />
-
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest mb-8 animate-fade-in">
-                        <SparklesIcon className="w-4 h-4" />
-                        Next Gen QR Generation
-                    </div>
-
-                    <h1 className="text-5xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
-                        QR Design for <br />
-                        <span className="text-blue-600">The Modern Era.</span>
-                    </h1>
-
-                    <p className="text-lg lg:text-xl opacity-60 leading-relaxed mb-12 max-w-[700px] mx-auto">
-                        Professional-grade QR generation with pixel-perfect styling, AI branding integration, and high-fidelity vector exports. Built for designers and brands.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button
-                            onClick={onStart}
-                            className="px-10 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-lg hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/30 flex items-center justify-center gap-3 active:scale-95"
-                        >
-                            Open Studio
-                            <ArrowRightIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-                </section>
-
-                {/* Feature Grid */}
-                <section className="py-24 px-6 max-w-[1200px] mx-auto w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {features.map((f, i) => (
-                            <div key={i} className="p-8 rounded-[2.5rem] border border-current border-opacity-5 bg-current bg-opacity-[0.02] transition-all hover:-translate-y-2">
-                                <div className={`w-14 h-14 rounded-2xl bg-current bg-opacity-5 flex items-center justify-center mb-6 ${f.color}`}>
-                                    <f.icon className="w-7 h-7" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
-                                <p className="text-sm opacity-50 leading-relaxed">{f.description}</p>
+            <main className="flex-1">
+                {/* Hero Section - Microsoft Fluent Style */}
+                <section className="relative pt-24 pb-32 px-6">
+                    <div className="max-w-[1200px] mx-auto">
+                        <div className="text-center mb-16">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md mb-8 ${
+                                isDark 
+                                    ? 'bg-[#0078d4]/10 text-[#60cdff] border border-[#0078d4]/20' 
+                                    : 'bg-[#deecf9] text-[#0078d4] border border-[#c7e0f4]'
+                            }`}>
+                                <SparklesIcon className="w-4 h-4" />
+                                <span className="text-xs font-semibold uppercase tracking-wide">Enterprise QR Solution</span>
                             </div>
-                        ))}
+
+                            <h1 className={`text-5xl md:text-7xl font-semibold mb-6 leading-tight ${
+                                isDark ? 'text-[#ffffff]' : 'text-[#201f1e]'
+                            }`}>
+                                Professional QR Code
+                                <br />
+                                <span className="text-[#0078d4]">Generation Platform</span>
+                            </h1>
+
+                            <p className={`text-xl md:text-2xl mb-12 max-w-[800px] mx-auto leading-relaxed ${
+                                isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                            }`}>
+                                Create pixel-perfect QR codes with AI-powered branding, precision styling controls, and enterprise-grade reliability. Built for modern teams.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                                <button
+                                    onClick={onStart}
+                                    className={`px-8 py-3.5 rounded-md font-semibold text-base transition-all flex items-center gap-2 ${
+                                        isDark
+                                            ? 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                                            : 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                                    } shadow-md hover:shadow-lg active:scale-[0.98]`}
+                                >
+                                    Start Creating
+                                    <ArrowRightIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                    className={`px-8 py-3.5 rounded-md font-semibold text-base transition-all ${
+                                        isDark
+                                            ? 'bg-transparent border-2 border-[#3a3a3a] text-[#ffffff] hover:bg-[#2a2a2a]'
+                                            : 'bg-transparent border-2 border-[#c8c6c4] text-[#323130] hover:bg-[#f3f2f1]'
+                                    }`}
+                                >
+                                    Learn More
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                {/* Visual Showcase Marquee */}
-                <section className="py-24 px-6 w-full overflow-hidden bg-current bg-opacity-[0.02] border-y border-current border-opacity-5">
-                    <div className="max-w-[1200px] mx-auto text-center mb-16">
-                        <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">Crafted for Clarity</h2>
-                        <p className="opacity-40 max-w-[600px] mx-auto">Used by top-tier marketing teams to bridge the physical and digital world.</p>
-                    </div>
+                {/* Features Section - Card-based Layout */}
+                <section className="py-20 px-6 bg-opacity-0">
+                    <div className="max-w-[1400px] mx-auto">
+                        <div className="text-center mb-16">
+                            <h2 className={`text-4xl md:text-5xl font-semibold mb-4 ${
+                                isDark ? 'text-[#ffffff]' : 'text-[#201f1e]'
+                            }`}>
+                                Powerful Features
+                            </h2>
+                            <p className={`text-lg ${
+                                isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                            }`}>
+                                Everything you need to create professional QR codes at scale
+                            </p>
+                        </div>
 
-                    <div className="flex gap-8 animate-marquee">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                            <div key={i} className="w-64 h-64 shrink-0 rounded-[3rem] bg-current bg-opacity-5 flex items-center justify-center border border-current border-opacity-10">
-                                <div className="w-32 h-32 bg-white rounded-2xl shadow-xl overflow-hidden p-4">
-                                    <div className="w-full h-full bg-slate-100 rounded opacity-20 relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {features.map((feature, index) => (
+                                <div
+                                    key={index}
+                                    className={`p-6 rounded-lg transition-all duration-200 ${
+                                        isDark
+                                            ? 'bg-[#252423] border border-[#3a3a3a] hover:border-[#0078d4]/50 hover:shadow-lg hover:shadow-[#0078d4]/10'
+                                            : 'bg-[#ffffff] border border-[#edebe9] hover:border-[#0078d4]/50 hover:shadow-lg hover:shadow-[#0078d4]/10'
+                                    } hover:-translate-y-1`}
+                                >
+                                    <div className={`w-12 h-12 rounded-md flex items-center justify-center mb-4 ${
+                                        isDark ? 'bg-[#0078d4]/10' : 'bg-[#deecf9]'
+                                    }`}>
+                                        <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                                    </div>
+                                    <h3 className={`text-xl font-semibold mb-2 ${
+                                        isDark ? 'text-[#ffffff]' : 'text-[#201f1e]'
+                                    }`}>
+                                        {feature.title}
+                                    </h3>
+                                    <p className={`text-sm leading-relaxed ${
+                                        isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                                    }`}>
+                                        {feature.description}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Capabilities Section */}
+                <section className={`py-20 px-6 ${
+                    isDark ? 'bg-[#252423]' : 'bg-[#f3f2f1]'
+                }`}>
+                    <div className="max-w-[1200px] mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                            <div>
+                                <h2 className={`text-4xl md:text-5xl font-semibold mb-6 ${
+                                    isDark ? 'text-[#ffffff]' : 'text-[#201f1e]'
+                                }`}>
+                                    Built for Modern Workflows
+                                </h2>
+                                <p className={`text-lg mb-8 ${
+                                    isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                                }`}>
+                                    NovaQR Studio combines cutting-edge AI technology with intuitive design tools to deliver professional results in minutes.
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {capabilities.map((capability, index) => (
+                                        <div key={index} className="flex items-start gap-3">
+                                            <CheckCircleIcon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                                                isDark ? 'text-[#107c10]' : 'text-[#107c10]'
+                                            }`} />
+                                            <span className={`text-sm ${
+                                                isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                                            }`}>
+                                                {capability}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className={`p-8 rounded-lg ${
+                                isDark ? 'bg-[#1a1a1a] border border-[#3a3a3a]' : 'bg-[#ffffff] border border-[#edebe9]'
+                            }`}>
+                                <div className="aspect-square bg-gradient-to-br from-[#0078d4]/10 to-[#106ebe]/10 rounded-lg flex items-center justify-center">
+                                    <div className="w-48 h-48 bg-white rounded-lg shadow-xl p-6 flex items-center justify-center">
+                                        <div className="w-full h-full bg-gradient-to-br from-[#0078d4] to-[#106ebe] rounded opacity-20" />
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA Section */}
+                <section className="py-24 px-6">
+                    <div className="max-w-[1000px] mx-auto text-center">
+                        <div className={`p-12 rounded-lg ${
+                            isDark 
+                                ? 'bg-gradient-to-br from-[#0078d4]/10 to-[#106ebe]/10 border border-[#0078d4]/20' 
+                                : 'bg-gradient-to-br from-[#deecf9] to-[#c7e0f4] border border-[#0078d4]/20'
+                        }`}>
+                            <h2 className={`text-4xl md:text-5xl font-semibold mb-4 ${
+                                isDark ? 'text-[#ffffff]' : 'text-[#201f1e]'
+                            }`}>
+                                Ready to Get Started?
+                            </h2>
+                            <p className={`text-lg mb-8 ${
+                                isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                            }`}>
+                                Create your first professional QR code in minutes
+                            </p>
+                            <button
+                                onClick={onStart}
+                                className={`px-10 py-4 rounded-md font-semibold text-lg transition-all ${
+                                    isDark
+                                        ? 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                                        : 'bg-[#0078d4] text-white hover:bg-[#106ebe] active:bg-[#005a9e]'
+                                } shadow-lg hover:shadow-xl active:scale-[0.98]`}
+                            >
+                                Open Studio
+                            </button>
+                        </div>
                     </div>
                 </section>
             </main>
 
-            <footer className="py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30 border-t border-current border-opacity-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em]">NovaQR Studio • Enterprise Grade</p>
-                <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest">
-                    <a href="#" className="hover:text-blue-500 transition-colors">Documentation</a>
-                    <a href="#" className="hover:text-blue-500 transition-colors">Privacy</a>
+            {/* Footer - Fluent Design Style */}
+            <footer className={`py-12 px-8 border-t ${
+                isDark 
+                    ? 'bg-[#1a1a1a] border-[#3a3a3a]' 
+                    : 'bg-[#fafafa] border-[#edebe9]'
+            }`}>
+                <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                    <p className={`text-sm ${
+                        isDark ? 'text-[#8a8886]' : 'text-[#605e5c]'
+                    }`}>
+                        © 2025 NovaQR Studio. All rights reserved.
+                    </p>
+                    <div className="flex gap-8">
+                        <a href="#" className={`text-sm hover:text-[#0078d4] transition-colors ${
+                            isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                        }`}>
+                            Documentation
+                        </a>
+                        <a href="#" className={`text-sm hover:text-[#0078d4] transition-colors ${
+                            isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                        }`}>
+                            Privacy
+                        </a>
+                        <a href="#" className={`text-sm hover:text-[#0078d4] transition-colors ${
+                            isDark ? 'text-[#c8c6c4]' : 'text-[#605e5c]'
+                        }`}>
+                            Terms
+                        </a>
+                    </div>
                 </div>
             </footer>
-
-            <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          display: flex;
-          width: 200%;
-          animation: marquee 40s linear infinite;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
-      `}</style>
         </div>
     );
 };

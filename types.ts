@@ -1,4 +1,3 @@
-
 export type DotType = 'dots' | 'rounded' | 'classy' | 'classy-rounded' | 'square' | 'extra-rounded';
 export type CornerSquareType = 'dot' | 'square' | 'extra-rounded';
 export type CornerDotType = 'dot' | 'square';
@@ -48,7 +47,7 @@ export interface QRSettings {
 export interface BrandingSuggestion {
   primaryColor: string;
   secondaryColor: string;
-  dotStyle: DotType;
-  cornerStyle: CornerSquareType;
-  reasoning: string;
+  backgroundColor?: string | null; // null or empty means transparent/skip background
+  bgGradientEnabled?: boolean;
+  bgGradientSecondary?: string; // Secondary color for gradient if bgGradientEnabled is true
 }
