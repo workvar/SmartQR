@@ -57,22 +57,34 @@ export async function POST(req: Request) {
     )?.email_address || email_addresses[0]?.email_address || '';
 
     try {
-      // Check if user exists
+      // Check if user exists (including deleted users)
       const { data: existingUser } = await supabase
         .from('users')
-        .select('id')
+        .select('id, deleted_at')
         .eq('clerk_user_id', id)
         .single();
 
       if (existingUser) {
-        // Update existing user
-        await supabase
-          .from('users')
-          .update({
-            email,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('clerk_user_id', id);
+        // If user was deleted and is being updated, restore them
+        if (existingUser.deleted_at) {
+          await supabase
+            .from('users')
+            .update({
+              email,
+              deleted_at: null, // Restore user
+              updated_at: new Date().toISOString(),
+            })
+            .eq('clerk_user_id', id);
+        } else {
+          // Update existing active user
+          await supabase
+            .from('users')
+            .update({
+              email,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('clerk_user_id', id);
+        }
       } else {
         // Create new user
         await supabase
@@ -82,11 +94,34 @@ export async function POST(req: Request) {
             email,
             qr_count: 0,
             ai_suggestions_used: 0,
+            deleted_at: null,
           });
       }
     } catch (error) {
       console.error('Error syncing user to Supabase:', error);
       return new Response('Error syncing user', {
+        status: 500,
+      });
+    }
+  }
+
+  if (eventType === 'user.deleted') {
+    const { id } = evt.data;
+
+    try {
+      // Soft delete: mark user as deleted instead of removing
+      await supabase
+        .from('users')
+        .update({
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('clerk_user_id', id);
+
+      console.log(`User ${id} marked as deleted (soft delete)`);
+    } catch (error) {
+      console.error('Error marking user as deleted:', error);
+      return new Response('Error marking user as deleted', {
         status: 500,
       });
     }

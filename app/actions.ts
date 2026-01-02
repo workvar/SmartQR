@@ -34,6 +34,7 @@ export async function getBrandingInsights(url: string): Promise<BrandingSuggesti
         .from('users')
         .select('ai_suggestions_used')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     if (userError && userError.code !== 'PGRST116') {
@@ -147,12 +148,13 @@ Return only color values in hex format.`;
 
     console.log('[Gemini API] Final Normalized Result:', result);
 
-    // Increment AI suggestions count
+    // Increment AI suggestions count (only for active users)
     const newCount = aiSuggestionsUsed + 1;
     await supabase
         .from('users')
         .update({ ai_suggestions_used: newCount })
-        .eq('clerk_user_id', userId);
+        .eq('clerk_user_id', userId)
+        .is('deleted_at', null); // Only update active users
 
     return result;
 }
@@ -165,11 +167,12 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
 
     const supabase = await createServerClient();
 
-    // Get user ID from users table
+    // Get user ID from users table (only active users)
     const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, qr_count')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     if (userError) {
@@ -225,11 +228,12 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
             throw new Error('Failed to save QR code');
         }
 
-        // Increment QR count
+        // Increment QR count (only for active users)
         await supabase
             .from('users')
             .update({ qr_count: userData.qr_count + 1 })
-            .eq('id', userData.id);
+            .eq('id', userData.id)
+            .is('deleted_at', null); // Only update active users
 
         return data.id;
     }
@@ -246,6 +250,7 @@ export async function checkQRLimit(): Promise<{ canCreate: boolean; count: numbe
         .from('users')
         .select('qr_count')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     const count = userData?.qr_count || 0;
@@ -263,6 +268,7 @@ export async function getUserData(): Promise<{ qr_count: number; ai_suggestions_
         .from('users')
         .select('qr_count, ai_suggestions_used')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -281,11 +287,12 @@ export async function getUserQRCodes(): Promise<QRCode[]> {
 
     const supabase = await createServerClient();
     
-    // First get user ID from users table
+    // First get user ID from users table (only active users)
     const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     if (userError || !userData) {
@@ -315,11 +322,12 @@ export async function deleteQRCode(qrId: string): Promise<{ success: boolean; er
 
     const supabase = await createServerClient();
 
-    // Get user ID from users table
+    // Get user ID from users table (only active users)
     const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, qr_count')
         .eq('clerk_user_id', userId)
+        .is('deleted_at', null) // Only get active users
         .single();
 
     if (userError || !userData) {
@@ -350,12 +358,13 @@ export async function deleteQRCode(qrId: string): Promise<{ success: boolean; er
         return { success: false, error: 'Failed to delete QR code' };
     }
 
-    // Update user QR count
+    // Update user QR count (only for active users)
     const newCount = Math.max(0, userData.qr_count - 1);
     await supabase
         .from('users')
         .update({ qr_count: newCount })
-        .eq('id', userData.id);
+        .eq('id', userData.id)
+        .is('deleted_at', null); // Only update active users
 
     return { success: true };
 }

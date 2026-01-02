@@ -33,8 +33,10 @@ GEMINI_API_KEY=your_gemini_api_key
 
 1. Go to your Clerk Dashboard → Webhooks
 2. Create a new webhook endpoint pointing to: `https://your-domain.com/api/webhooks/clerk`
-3. Select events: `user.created` and `user.updated`
+3. Select events: `user.created`, `user.updated`, and `user.deleted`
 4. Copy the webhook signing secret and add it to `.env.local` as `CLERK_WEBHOOK_SECRET`
+
+**Note:** The `user.deleted` event is handled with soft delete - users are marked as deleted but their data is preserved to prevent limit abuse.
 
 ## Features Implemented
 

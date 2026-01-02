@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ NULL, -- Soft delete: marks user as deleted without removing data
   qr_count INTEGER DEFAULT 0 CHECK (qr_count >= 0),
   ai_suggestions_used INTEGER DEFAULT 0 CHECK (ai_suggestions_used >= 0)
 );
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS qr_codes (
 
 -- Indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_user_id);
+CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at) WHERE deleted_at IS NULL; -- Partial index for active users
 CREATE INDEX IF NOT EXISTS idx_qr_codes_user_id ON qr_codes(user_id);
 CREATE INDEX IF NOT EXISTS idx_qr_codes_created_at ON qr_codes(created_at DESC);
 

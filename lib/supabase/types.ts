@@ -8,6 +8,7 @@ export interface Database {
           email: string;
           created_at: string;
           updated_at: string;
+          deleted_at: string | null;
           qr_count: number;
           ai_suggestions_used: number;
         };
@@ -17,6 +18,7 @@ export interface Database {
           email: string;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
           qr_count?: number;
           ai_suggestions_used?: number;
         };
@@ -26,6 +28,7 @@ export interface Database {
           email?: string;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
           qr_count?: number;
           ai_suggestions_used?: number;
         };
@@ -79,6 +82,7 @@ export interface User {
   email: string;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   qr_count: number;
   ai_suggestions_used: number;
 }
