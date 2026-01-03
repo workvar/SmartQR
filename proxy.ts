@@ -18,8 +18,8 @@ const isDashboardRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
   
-  // Redirect authenticated users from home to dashboard
-  if (userId && req.nextUrl.pathname === '/') {
+  // Redirect authenticated users from home or login to dashboard
+  if (userId && (req.nextUrl.pathname === '/' || req.nextUrl.pathname.startsWith('/login'))) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
   

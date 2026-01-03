@@ -29,6 +29,8 @@ function LoginContent() {
               routing="path"
               path="/login"
               signInUrl="/login?mode=sign-in"
+              afterSignUpUrl="/dashboard"
+              afterSignInUrl="/dashboard"
               appearance={{
                 elements: {
                   rootBox: "mx-auto",
@@ -41,6 +43,8 @@ function LoginContent() {
               routing="path"
               path="/login"
               signUpUrl="/login?mode=sign-up"
+              afterSignInUrl="/dashboard"
+              afterSignUpUrl="/dashboard"
               appearance={{
                 elements: {
                   rootBox: "mx-auto",

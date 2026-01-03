@@ -16,7 +16,7 @@ export default function Page() {
   const isDark = settings.theme === 'dark';
 
   const handleStart = () => {
-    router.push('/create/content');
+    router.push('/dashboard');
   };
 
   const toggleTheme = () => {
