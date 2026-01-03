@@ -212,6 +212,42 @@ export const StepDesign: React.FC<StepDesignProps> = ({ settings, onUpdate, isDa
                         </div>
                     </AccordionItem>
 
+                    {/* Logo Settings Section */}
+                    <AccordionItem value="logo" label="Logo Settings" icon={SparklesIcon} isDark={isDark}>
+                        <div className="space-y-10 mt-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <Label.Root className={labelClass}>Asset Size</Label.Root>
+                                    <Slider.Root
+                                        className="relative flex items-center select-none touch-none w-full h-5"
+                                        value={[settings.logoSize]}
+                                        onValueChange={([v]) => onUpdate({ logoSize: v })}
+                                        max={0.5} min={0.1} step={0.01}
+                                    >
+                                        <Slider.Track className={`relative grow rounded-full h-[3px] overflow-hidden ${isDark ? 'bg-white/20' : 'bg-black/20'}`}>
+                                            <Slider.Range className="absolute bg-blue-600 h-full" />
+                                        </Slider.Track>
+                                        <Slider.Thumb className="block w-5 h-5 bg-white shadow-lg rounded-full hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                                    </Slider.Root>
+                                </div>
+                                <div className="space-y-4">
+                                    <Label.Root className={labelClass}>Buffer Margin</Label.Root>
+                                    <Slider.Root
+                                        className="relative flex items-center select-none touch-none w-full h-5"
+                                        value={[settings.logoMargin]}
+                                        onValueChange={([v]) => onUpdate({ logoMargin: v })}
+                                        max={20} min={0} step={1}
+                                    >
+                                        <Slider.Track className={`relative grow rounded-full h-[3px] overflow-hidden ${isDark ? 'bg-white/20' : 'bg-black/20'}`}>
+                                            <Slider.Range className="absolute bg-blue-600 h-full" />
+                                        </Slider.Track>
+                                        <Slider.Thumb className="block w-5 h-5 bg-white shadow-lg rounded-full hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                                    </Slider.Root>
+                                </div>
+                            </div>
+                        </div>
+                    </AccordionItem>
+
                     {/* Frame Section */}
                     <AccordionItem value="frame" label="Frame Layer" icon={Square3Stack3DIcon} isDark={isDark}>
                         <div className="space-y-10 mt-5">

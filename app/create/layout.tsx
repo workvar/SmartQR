@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { SignedIn, UserButton } from '@clerk/nextjs';
-import { saveQRCode } from '@/app/actions';
+import { saveQRCode, getDynamicQRDestination, getDynamicQRScanUrl } from '@/app/actions';
 import { useState } from 'react';
 
 const ALL_STEPS = [
@@ -32,6 +32,7 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
     const [editingQRId, setEditingQRId] = useState<string | null>(null);
+    const [dynamicQRScanUrl, setDynamicQRScanUrl] = useState<string | null>(null);
 
     const isDark = settings.theme === 'dark';
     
@@ -45,7 +46,34 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
                     setEditingQRId(parsed.id);
                     // Load settings if editing
                     if (parsed.settings) {
-                        dispatch(updateSettings(parsed.settings));
+                        const loadedSettings = { ...parsed.settings };
+                        
+                        // If it's a dynamic QR, fetch both destination URL and scan URL
+                        if (loadedSettings.isDynamic) {
+                            Promise.all([
+                                getDynamicQRDestination(parsed.id),
+                                getDynamicQRScanUrl(parsed.id)
+                            ]).then(([destinationUrl, scanUrl]) => {
+                                if (destinationUrl) {
+                                    // Store scan URL separately for QR generation
+                                    if (scanUrl) {
+                                        setDynamicQRScanUrl(scanUrl);
+                                    }
+                                    // Show destination URL in input field
+                                    dispatch(updateSettings({
+                                        ...loadedSettings,
+                                        url: destinationUrl,
+                                    }));
+                                } else {
+                                    dispatch(updateSettings(loadedSettings));
+                                }
+                            }).catch((error) => {
+                                console.error('Error loading dynamic QR data:', error);
+                                dispatch(updateSettings(loadedSettings));
+                            });
+                        } else {
+                            dispatch(updateSettings(loadedSettings));
+                        }
                     }
                 } catch (e) {
                     console.error('Error parsing editing QR:', e);
@@ -222,7 +250,11 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
                     <div className="w-full lg:w-[420px] shrink-0">
                         <div className="sticky top-28">
                             <PreviewCard 
-                                settings={settings} 
+                                settings={{
+                                    ...settings,
+                                    // For dynamic QRs being edited, use scan URL for QR generation
+                                    url: (settings.isDynamic && dynamicQRScanUrl) ? dynamicQRScanUrl : settings.url
+                                }} 
                                 showDownload={isFinalStep} 
                                 onUpdate={handleUpdateSettings}
                                 currentStepIndex={currentStepIndex}

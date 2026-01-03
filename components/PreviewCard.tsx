@@ -100,10 +100,28 @@ const PreviewCard: React.FC<PreviewCardProps> = ({ settings, showDownload = fals
             } : undefined
         };
 
+        // For dynamic QRs, we need to use the scan URL for QR generation, not the destination URL
+        // The settings.url might contain the destination URL (for editing), but we need the scan URL
+        let qrDataUrl = settings.url.trim();
+        
+        // If it's a dynamic QR, check if the URL is a scan URL (contains /dynamic/scan/)
+        // If not, it's the destination URL and we should use the scan URL from settings
+        // For new dynamic QRs being created, we can't generate the QR yet (no scan URL exists)
+        if (settings.isDynamic) {
+            // Check if URL is already a scan URL
+            if (!qrDataUrl.includes('/dynamic/scan/')) {
+                // This is a destination URL, not a scan URL
+                // For editing, the scan URL should be passed in settings.url
+                // For new creation, we can't show QR preview (scan URL doesn't exist yet)
+                // In this case, we'll use the destination URL as placeholder, but it won't be the final QR
+                // The actual QR will be generated with scan URL when saved
+            }
+        }
+        
         const qrConfig = {
             width: 320,
             height: 320,
-            data: settings.url.trim(), // Use trimmed URL, ensure it's not empty
+            data: qrDataUrl, // Use trimmed URL, ensure it's not empty
             margin: settings.margin,
             dotsOptions,
             backgroundOptions: {

@@ -5,6 +5,7 @@ import { BrandingSuggestion, QRSettings } from "../types";
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { QRCode } from '@/lib/supabase/types';
+import { headers } from 'next/headers';
 
 /**
  * Ensures user exists in database. Creates user if they don't exist.
@@ -212,6 +213,25 @@ Return only color values in hex format.`;
     return result;
 }
 
+/**
+ * Generates a unique identifier for dynamic QR codes
+ */
+function generateUniqueId(): string {
+    // Generate a URL-safe unique ID using crypto
+    const array = new Uint8Array(16);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        crypto.getRandomValues(array);
+    } else {
+        // Fallback for environments without crypto
+        for (let i = 0; i < array.length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+        }
+    }
+    return Array.from(array)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
 export async function saveQRCode(name: string, url: string, settings: QRSettings, qrId?: string | null): Promise<string> {
     const { userId } = await auth();
     if (!userId) {
@@ -222,14 +242,114 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
     const userData = await ensureUserExists(userId);
     const supabase = await createServerClient();
 
+    const isDynamic = settings.isDynamic || false;
+
+    // If dynamic, check dynamic QR limit (1 for free tier)
+    // BUT: Skip this check if we're updating an existing QR that's already dynamic
+    // (editing content of existing dynamic QR should not count against quota)
+    if (isDynamic && !qrId) {
+        // Only check limit when creating a NEW dynamic QR
+        // Count active dynamic QRs (non-deleted and not expired)
+        let dynamicCountResult = await supabase
+            .from('dynamic_qr_codes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userData.id)
+            .is('deleted_at', null)
+            .gt('expires_at', new Date().toISOString());
+        
+        if (dynamicCountResult.error && !dynamicCountResult.error.message?.includes('does not exist')) {
+            console.error('Error checking dynamic QR limit:', dynamicCountResult.error);
+        } else {
+            const dynamicCount = dynamicCountResult.count || 0;
+            if (dynamicCount >= 1) {
+                throw new Error('Dynamic QR code limit reached (1/1). Free tier users can only have 1 active dynamic QR code. Please delete your existing dynamic QR code or wait for it to expire.');
+            }
+        }
+    } else if (isDynamic && qrId) {
+        // When updating an existing QR, check if it's being converted from static to dynamic
+        // Get the current QR to check if it was already dynamic
+        const { data: currentQR } = await supabase
+            .from('qr_codes')
+            .select('settings')
+            .eq('id', qrId)
+            .eq('user_id', userData.id)
+            .single();
+        
+        const wasAlreadyDynamic = currentQR?.settings?.isDynamic || false;
+        
+        // Only check quota if converting from static to dynamic
+        if (!wasAlreadyDynamic) {
+            let dynamicCountResult = await supabase
+                .from('dynamic_qr_codes')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userData.id)
+                .is('deleted_at', null)
+                .gt('expires_at', new Date().toISOString());
+            
+            if (dynamicCountResult.error && !dynamicCountResult.error.message?.includes('does not exist')) {
+                console.error('Error checking dynamic QR limit:', dynamicCountResult.error);
+            } else {
+                const dynamicCount = dynamicCountResult.count || 0;
+                if (dynamicCount >= 1) {
+                    throw new Error('Dynamic QR code limit reached (1/1). Free tier users can only have 1 active dynamic QR code. Please delete your existing dynamic QR code or wait for it to expire.');
+                }
+            }
+        }
+    }
+
     if (qrId) {
+        // For dynamic QRs, the URL parameter is the destination URL, not the scan URL
+        // We need to keep the scan URL in the qr_codes table
+        let finalUrl = url;
+        
+        if (isDynamic) {
+            // Check if dynamic QR entry exists to get the scan URL
+            const { data: existingDynamic } = await supabase
+                .from('dynamic_qr_codes')
+                .select('unique_id')
+                .eq('qr_code_id', qrId)
+                .eq('user_id', userData.id)
+                .is('deleted_at', null)
+                .single();
+
+            if (existingDynamic) {
+                // Keep the scan URL for the QR code itself
+                // Get the domain from environment or headers
+                let domain = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_DOMAIN;
+                
+                if (!domain) {
+                    try {
+                        const headersList = await headers();
+                        const host = headersList.get('host');
+                        if (host) {
+                            domain = host;
+                        }
+                    } catch (e) {
+                        // Headers not available
+                    }
+                }
+                
+                if (domain) {
+                    domain = domain.replace(/^https?:\/\//, '');
+                } else {
+                    domain = 'localhost:3000';
+                }
+                
+                const protocol = domain.includes('localhost') ? 'http' : 'https';
+                finalUrl = `${protocol}://${domain}/dynamic/scan/${existingDynamic.unique_id}`;
+            }
+        }
+
         // Update existing QR
         const { data, error } = await supabase
             .from('qr_codes')
             .update({
                 name,
-                url,
-                settings,
+                url: finalUrl,
+                settings: {
+                    ...settings,
+                    url: finalUrl, // Update settings URL too
+                },
                 updated_at: new Date().toISOString(),
             })
             .eq('id', qrId)
@@ -240,6 +360,56 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
         if (error) {
             console.error('Error updating QR code:', error);
             throw new Error('Failed to update QR code');
+        }
+
+        // Handle dynamic QR update
+        if (isDynamic) {
+            // Check if dynamic QR entry exists
+            const { data: existingDynamic } = await supabase
+                .from('dynamic_qr_codes')
+                .select('id')
+                .eq('qr_code_id', qrId)
+                .eq('user_id', userData.id)
+                .is('deleted_at', null)
+                .single();
+
+            if (existingDynamic) {
+                // Update existing dynamic QR destination URL
+                // The 'url' parameter contains the destination URL from user input
+                await supabase
+                    .from('dynamic_qr_codes')
+                    .update({
+                        destination_url: url, // This is the destination URL from the user input
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', existingDynamic.id);
+            } else {
+                // Create new dynamic QR entry for existing QR code
+                const uniqueId = generateUniqueId();
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + 15); // 15 days expiry
+
+                await supabase
+                    .from('dynamic_qr_codes')
+                    .insert({
+                        qr_code_id: qrId,
+                        user_id: userData.id,
+                        unique_id: uniqueId,
+                        destination_url: url, // This is the destination URL from the user input
+                        expires_at: expiresAt.toISOString(),
+                    });
+            }
+        } else {
+            // If switching from dynamic to static, soft delete dynamic entry
+            await supabase
+                .from('dynamic_qr_codes')
+                .update({
+                    deleted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('qr_code_id', qrId)
+                .eq('user_id', userData.id)
+                .is('deleted_at', null);
         }
 
         return data.id;
@@ -268,14 +438,50 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
             throw new Error('QR code limit reached (4/4). Please delete an existing QR code to create a new one.');
         }
 
+        // Generate scan URL for dynamic QRs
+        let finalUrl = url;
+        let uniqueId: string | null = null;
+        
+        if (isDynamic) {
+            uniqueId = generateUniqueId();
+            // Get the domain from environment or headers
+            let domain = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_DOMAIN;
+            
+            if (!domain) {
+                // Try to get from headers
+                try {
+                    const headersList = await headers();
+                    const host = headersList.get('host');
+                    if (host) {
+                        domain = host;
+                    }
+                } catch (e) {
+                    // Headers not available, use fallback
+                }
+            }
+            
+            // Remove protocol if present
+            if (domain) {
+                domain = domain.replace(/^https?:\/\//, '');
+            } else {
+                domain = 'localhost:3000';
+            }
+            
+            const protocol = domain.includes('localhost') ? 'http' : 'https';
+            finalUrl = `${protocol}://${domain}/dynamic/scan/${uniqueId}`;
+        }
+
         // Create new QR
         const { data, error } = await supabase
             .from('qr_codes')
             .insert({
                 user_id: userData.id,
                 name,
-                url,
-                settings,
+                url: finalUrl, // Use scan URL for dynamic, original URL for static
+                settings: {
+                    ...settings,
+                    url: finalUrl, // Update settings URL too
+                },
             })
             .select()
             .single();
@@ -283,6 +489,32 @@ export async function saveQRCode(name: string, url: string, settings: QRSettings
         if (error) {
             console.error('Error creating QR code:', error);
             throw new Error('Failed to save QR code');
+        }
+
+        // Create dynamic QR entry if needed
+        if (isDynamic && uniqueId) {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 15); // 15 days expiry
+
+            const { error: dynamicError } = await supabase
+                .from('dynamic_qr_codes')
+                .insert({
+                    qr_code_id: data.id,
+                    user_id: userData.id,
+                    unique_id: uniqueId,
+                    destination_url: url, // Store the original destination URL
+                    expires_at: expiresAt.toISOString(),
+                });
+
+            if (dynamicError) {
+                console.error('Error creating dynamic QR entry:', dynamicError);
+                // Clean up the QR code if dynamic entry creation fails
+                await supabase
+                    .from('qr_codes')
+                    .delete()
+                    .eq('id', data.id);
+                throw new Error('Failed to create dynamic QR code');
+            }
         }
 
         // Increment QR count (for display purposes, even if some are soft-deleted)
@@ -386,10 +618,108 @@ export async function getUserQRCodes(): Promise<QRCode[]> {
             return [];
         }
 
+        // For dynamic QRs, fetch the destination URL and update both url and settings
+        if (data) {
+            for (const qr of data) {
+                const isDynamic = qr.settings?.isDynamic || false;
+                if (isDynamic) {
+                    // Get the destination URL from dynamic_qr_codes table
+                    const { data: dynamicQR } = await supabase
+                        .from('dynamic_qr_codes')
+                        .select('destination_url')
+                        .eq('qr_code_id', qr.id)
+                        .eq('user_id', userData.id)
+                        .is('deleted_at', null)
+                        .gt('expires_at', new Date().toISOString())
+                        .single();
+                    
+                    if (dynamicQR && dynamicQR.destination_url) {
+                        // Update both the url field and settings to show destination URL instead of scan URL
+                        qr.url = dynamicQR.destination_url;
+                        qr.settings = {
+                            ...qr.settings,
+                            url: dynamicQR.destination_url,
+                        };
+                    }
+                }
+            }
+        }
+
         return data || [];
     } catch (error) {
         console.error('Error loading QR codes:', error);
         return [];
+    }
+}
+
+export async function getDynamicQRDestination(qrId: string): Promise<string | null> {
+    const { userId } = await auth();
+    if (!userId) {
+        return null;
+    }
+
+    try {
+        const userData = await ensureUserExists(userId);
+        const supabase = await createServerClient();
+
+        // Get the destination URL for this dynamic QR
+        const { data, error } = await supabase
+            .from('dynamic_qr_codes')
+            .select('destination_url')
+            .eq('qr_code_id', qrId)
+            .eq('user_id', userData.id)
+            .is('deleted_at', null)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) {
+            return null;
+        }
+
+        return data.destination_url;
+    } catch (error) {
+        console.error('Error getting dynamic QR destination:', error);
+        return null;
+    }
+}
+
+export async function getDynamicQRScanUrl(qrId: string): Promise<string | null> {
+    const { userId } = await auth();
+    if (!userId) {
+        return null;
+    }
+
+    try {
+        const userData = await ensureUserExists(userId);
+        const supabase = await createServerClient();
+
+        // Get the unique_id for this dynamic QR to construct the scan URL
+        const { data, error } = await supabase
+            .from('dynamic_qr_codes')
+            .select('unique_id')
+            .eq('qr_code_id', qrId)
+            .eq('user_id', userData.id)
+            .is('deleted_at', null)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+
+        if (error || !data) {
+            return null;
+        }
+
+        // Get the domain from environment or use default
+        let domain = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_DOMAIN;
+        if (domain) {
+            domain = domain.replace(/^https?:\/\//, '');
+        } else {
+            domain = 'localhost:3000';
+        }
+        
+        const protocol = domain.includes('localhost') ? 'http' : 'https';
+        return `${protocol}://${domain}/dynamic/scan/${data.unique_id}`;
+    } catch (error) {
+        console.error('Error getting dynamic QR scan URL:', error);
+        return null;
     }
 }
 
@@ -448,6 +778,88 @@ export async function deleteQRCode(qrId: string): Promise<{ success: boolean; er
     } catch (error) {
         console.error('Error deleting QR code:', error);
         return { success: false, error: 'Failed to delete QR code' };
+    }
+}
+
+export async function getDynamicQRQuota(): Promise<{ count: number; limit: number; canCreate: boolean }> {
+    const { userId } = await auth();
+    if (!userId) {
+        return { count: 0, limit: 1, canCreate: false };
+    }
+
+    try {
+        const userData = await ensureUserExists(userId);
+        const supabase = await createServerClient();
+
+        // Count active dynamic QRs (non-deleted and not expired)
+        let countResult = await supabase
+            .from('dynamic_qr_codes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userData.id)
+            .is('deleted_at', null)
+            .gt('expires_at', new Date().toISOString());
+
+        if (countResult.error && !countResult.error.message?.includes('does not exist')) {
+            console.error('Error checking dynamic QR quota:', countResult.error);
+            return { count: 0, limit: 1, canCreate: false };
+        }
+
+        const count = countResult.count || 0;
+        const limit = 1; // Free tier limit
+        const canCreate = count < limit;
+
+        return { count, limit, canCreate };
+    } catch (error) {
+        console.error('Error getting dynamic QR quota:', error);
+        return { count: 0, limit: 1, canCreate: false };
+    }
+}
+
+export async function renameQRCode(qrId: string, newName: string): Promise<{ success: boolean; error?: string }> {
+    const { userId } = await auth();
+    if (!userId) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    if (!newName || newName.trim().length === 0) {
+        return { success: false, error: 'Name cannot be empty' };
+    }
+
+    try {
+        const userData = await ensureUserExists(userId);
+        const supabase = await createServerClient();
+
+        // Verify QR code belongs to user
+        const { data: qrData, error: qrError } = await supabase
+            .from('qr_codes')
+            .select('id')
+            .eq('id', qrId)
+            .eq('user_id', userData.id)
+            .single();
+
+        if (qrError || !qrData) {
+            return { success: false, error: 'QR code not found or access denied' };
+        }
+
+        // Update the name
+        const { error: updateError } = await supabase
+            .from('qr_codes')
+            .update({
+                name: newName.trim(),
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', qrId)
+            .eq('user_id', userData.id);
+
+        if (updateError) {
+            console.error('Error renaming QR code:', updateError);
+            return { success: false, error: 'Failed to rename QR code' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error renaming QR code:', error);
+        return { success: false, error: 'Failed to rename QR code' };
     }
 }
 

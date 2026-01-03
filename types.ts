@@ -42,6 +42,8 @@ export interface QRSettings {
   framePadding: number;
   // Theme
   theme: Theme;
+  // Dynamic QR
+  isDynamic?: boolean;
 }
 
 export interface BrandingSuggestion {

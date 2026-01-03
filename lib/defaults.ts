@@ -36,5 +36,6 @@ export const DEFAULT_SETTINGS: QRSettings = {
     frameStyle: 'solid',
     frameBorderRadius: 24,
     framePadding: 12,
-    theme: 'light'
+    theme: 'light',
+    isDynamic: false
 };

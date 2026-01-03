@@ -2,6 +2,7 @@
 import React from 'react';
 import { LinkIcon } from '@heroicons/react/24/outline';
 import { QRSettings } from '@/types';
+import { CustomSwitch } from '../ui/CustomSwitch';
 
 interface StepContentProps {
     settings: QRSettings;
@@ -23,6 +24,14 @@ export const StepContent: React.FC<StepContentProps> = ({ settings, onUpdate, is
                     className="w-full text-2xl lg:text-3xl font-bold bg-transparent outline-none placeholder:text-muted-foreground"
                 />
             </div>
+        </div>
+        <div className="mt-6">
+            <CustomSwitch
+                label="Dynamic Content"
+                checked={settings.isDynamic || false}
+                onCheckedChange={(checked) => onUpdate({ isDynamic: checked })}
+                isDark={isDark}
+            />
         </div>
     </div>
 );
