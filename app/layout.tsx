@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
 import { ReduxProvider } from "./ReduxProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import {
   ClerkProvider,
   SignInButton,
@@ -71,6 +72,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StructuredDataScript data={[generateOrganizationSchema(), generateWebApplicationSchema()]} />
+        <SpeedInsights />
         <Analytics />
         <ReduxProvider>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
