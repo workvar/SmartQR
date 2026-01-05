@@ -13,6 +13,9 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Analytics } from "@/components/Analytics";
+import { defaultMetadata } from "@/lib/seo/metadata";
+import { StructuredDataScript } from "@/components/seo/StructuredData";
+import { generateOrganizationSchema, generateWebApplicationSchema } from "@/lib/seo/structuredData";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +28,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QRry Studio - Smart QR Code Generator",
-  description: "Professional-grade QR generation with pixel-perfect styling, AI branding integration, and high-fidelity vector exports.",
+  ...defaultMetadata,
   icons: {
     icon: [
       { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
@@ -41,6 +43,19 @@ export const metadata: Metadata = {
   manifest: "/favicon/site.webmanifest",
   appleWebApp: {
     title: "QRry",
+    capable: true,
+    statusBarStyle: "default",
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  themeColor: '#2563eb',
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
   },
 };
 
@@ -52,17 +67,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
     <html lang="en">
-      <head>
-        <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
-        <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
-        <link rel="shortcut icon" href="/favicon/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-        <meta name="apple-mobile-web-app-title" content="QRry" />
-        <link rel="manifest" href="/favicon/site.webmanifest" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <StructuredDataScript data={[generateOrganizationSchema(), generateWebApplicationSchema()]} />
         <Analytics />
         <ReduxProvider>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

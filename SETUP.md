@@ -20,6 +20,14 @@ GEMINI_API_KEY=your_gemini_api_key
 # Analytics (Optional)
 NEXT_PUBLIC_GA_ID=your_google_analytics_id  # e.g., G-XXXXXXXXXX
 NEXT_PUBLIC_CLARITY_ID=your_microsoft_clarity_id  # e.g., abc123def4
+
+# SEO & Verification (Optional)
+NEXT_PUBLIC_APP_URL=https://your-domain.com  # Your production domain
+NEXT_PUBLIC_DOMAIN=your-domain.com  # Alternative domain variable
+NEXT_PUBLIC_GOOGLE_VERIFICATION=your_google_verification_code  # From Google Search Console
+NEXT_PUBLIC_YANDEX_VERIFICATION=your_yandex_verification_code  # Optional
+NEXT_PUBLIC_YAHOO_VERIFICATION=your_yahoo_verification_code  # Optional
+NEXT_PUBLIC_CONTACT_EMAIL=support@your-domain.com  # Contact email for schema
 ```
 
 ## Database Setup

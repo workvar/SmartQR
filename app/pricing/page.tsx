@@ -10,6 +10,8 @@ import { AppFooter } from '@/components/common/AppFooter';
 import { PricingCard } from '@/components/pricing/PricingCard';
 import { FAQItem } from '@/components/pricing/FAQItem';
 import { pricingPlans, pricingFAQs, freePlanFeatures, pricingNote } from '@/data/pricingData';
+import { StructuredDataScript } from '@/components/seo/StructuredData';
+import { generateFAQSchema, generateBreadcrumbSchema, generateProductSchema } from '@/lib/seo/structuredData';
 
 export default function PricingPage() {
   const router = useRouter();
@@ -30,12 +32,30 @@ export default function PricingPage() {
     router.push('/create/content');
   };
 
+  const faqSchema = generateFAQSchema(
+    pricingFAQs.map(faq => ({ question: faq.q, answer: faq.a }))
+  );
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: process.env.NEXT_PUBLIC_APP_URL || 'https://qrry.studio' },
+    { name: 'Pricing', url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://qrry.studio'}/pricing` },
+  ]);
+
+  const productSchemas = pricingPlans.map(plan => 
+    generateProductSchema({
+      name: plan.name,
+      description: plan.description,
+      price: plan.price.replace('$', ''),
+    })
+  );
+
   return (
     <div className={`min-h-screen transition-colors duration-500 ${
       isDark 
         ? 'bg-black text-white' 
         : 'bg-[#F5F5F7] text-[#1D1D1F]'
     }`}>
+      <StructuredDataScript data={[faqSchema, breadcrumbSchema, ...productSchemas]} />
       <AppHeader 
         isDark={isDark}
         onToggleTheme={toggleTheme}
