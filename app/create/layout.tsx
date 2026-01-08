@@ -16,6 +16,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { ProgressBar } from '@/components/create/ProgressBar';
 import { StepNavigation } from '@/components/create/StepNavigation';
 import { CREATE_STEPS } from '@/data/createStepsData';
+import { AppFooter } from '@/components/common/AppFooter';
 
 export default function CreateLayout({ children }: { children: React.ReactNode }) {
     const settings = useAppSelector((state: any) => state.qrSettings);
@@ -215,9 +216,7 @@ export default function CreateLayout({ children }: { children: React.ReactNode }
                 </div>
             </main>
 
-            <footer className="py-12 px-6 border-t border-current border-opacity-5 text-center">
-                <p className="opacity-30 text-[11px] font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} Workvar Pvt. Ltd.</p>
-            </footer>
+            <AppFooter isDark={isDark} />
         </div>
     );
 }

@@ -24,16 +24,118 @@ export const StepBranding: React.FC<StepBrandingProps> = ({ settings, onUpdate, 
 
     const labelClass = `block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-white/30' : 'text-black/30'}`;
 
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
+    const compressImage = (file: File, maxSizeMB: number = 1.5): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const maxSizeBytes = maxSizeMB * 1024 * 1024; // Convert MB to bytes
+            
+            // If file is already small enough, return as-is
+            if (file.size <= maxSizeBytes) {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            // Create image to get dimensions
+            const img = new Image();
             const reader = new FileReader();
+            
             reader.onload = (event) => {
-                onUpdate({ logoUrl: event.target?.result as string });
-                setToast({ message: "Logo uploaded successfully!", type: 'info' });
-                setTimeout(() => setToast(null), 4000);
+                img.onload = () => {
+                    // Calculate new dimensions (max 512x512 for logo)
+                    const maxDimension = 512;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = (height / width) * maxDimension;
+                            width = maxDimension;
+                        } else {
+                            width = (width / height) * maxDimension;
+                            height = maxDimension;
+                        }
+                    }
+
+                    // Create canvas and compress
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    if (!ctx) {
+                        reject(new Error('Could not create canvas context'));
+                        return;
+                    }
+
+                    // Draw image on canvas
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Try different quality levels to get under size limit
+                    const qualityLevels = [0.8, 0.6, 0.4, 0.3, 0.2, 0.15];
+                    let dataUrl = '';
+                    
+                    for (const quality of qualityLevels) {
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        // Base64 is approximately 4/3 of the original size
+                        // Subtract the data URL prefix length
+                        const prefixLength = 'data:image/jpeg;base64,'.length;
+                        const sizeInBytes = (dataUrl.length - prefixLength) * 3 / 4;
+                        
+                        if (sizeInBytes <= maxSizeBytes) {
+                            resolve(dataUrl);
+                            return;
+                        }
+                    }
+                    
+                    // If still too large, use the lowest quality
+                    resolve(dataUrl || canvas.toDataURL('image/jpeg', 0.1));
+                };
+                
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = event.target?.result as string;
             };
+            
+            reader.onerror = reject;
             reader.readAsDataURL(file);
+        });
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (2MB limit, but we'll compress to 1.5MB max)
+        const maxSizeMB = 2;
+        const maxSizeBytes = maxSizeMB * 1024 * 1024;
+        
+        if (file.size > maxSizeBytes) {
+            setToast({ 
+                message: `Image is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is ${maxSizeMB}MB. Please use a smaller image.`, 
+                type: 'error' 
+            });
+            setTimeout(() => setToast(null), 5000);
+            // Reset the input
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            // Compress image if needed (target 1.5MB to be safe)
+            const compressedDataUrl = await compressImage(file, 1.5);
+            onUpdate({ logoUrl: compressedDataUrl });
+            setToast({ message: "Logo uploaded successfully!", type: 'info' });
+            setTimeout(() => setToast(null), 4000);
+        } catch (error) {
+            console.error('Error processing image:', error);
+            setToast({ 
+                message: "Failed to process image. Please try a different image.", 
+                type: 'error' 
+            });
+            setTimeout(() => setToast(null), 5000);
+            // Reset the input
+            e.target.value = '';
         }
     };
 

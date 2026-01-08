@@ -29,7 +29,11 @@ interface StepDesignProps {
     isDark?: boolean;
 }
 
-export const StepDesign: React.FC<StepDesignProps> = ({ settings, onUpdate, isDark = false }) => {
+export const StepDesign: React.FC<StepDesignProps> = ({ 
+    settings, 
+    onUpdate, 
+    isDark = false,
+}) => {
     const [toast, setToast] = useState<{ message: string; type: 'error' | 'info' } | null>(null);
 
     const labelClass = `block text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-white/70' : 'text-black/70'}`;

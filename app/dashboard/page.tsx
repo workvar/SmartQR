@@ -14,6 +14,7 @@ import { QuotaCard } from '@/components/dashboard/QuotaCard';
 import { QRTable } from '@/components/dashboard/QRTable';
 import { DeleteModal } from '@/components/dashboard/DeleteModal';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { AppFooter } from '@/components/common/AppFooter';
 
 type SortField = 'name' | 'url' | 'created_at';
 type SortDirection = 'asc' | 'desc';
@@ -24,7 +25,7 @@ export default function DashboardPage() {
   const settings = useAppSelector((state: any) => state.qrSettings);
   const dispatch = useAppDispatch();
   const isDark = settings.theme === 'dark';
-
+  
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<{ qr_count: number; ai_suggestions_used: number } | null>(null);
@@ -46,7 +47,7 @@ export default function DashboardPage() {
 
   const loadUserData = async () => {
     if (!user) return;
-
+    
     try {
       const data = await getUserData();
       if (data) {
@@ -82,6 +83,11 @@ export default function DashboardPage() {
   };
 
   const handleDeleteClick = (id: string) => {
+    // Don't allow deleting already deleted QR codes
+    const qr = qrCodes.find(q => q.id === id);
+    if (qr?.deleted_at) {
+      return;
+    }
     setConfirmingDeleteId(id);
   };
 
@@ -100,7 +106,8 @@ export default function DashboardPage() {
       if (!result.success) {
         alert(result.error || 'Failed to delete QR code');
       } else {
-        setQrCodes(qrCodes.filter(qr => qr.id !== id));
+        // Reload QR codes to get updated list with deleted status
+        loadQRCodes();
         loadDynamicQRQuota();
       }
     } catch (error) {
@@ -112,6 +119,10 @@ export default function DashboardPage() {
   };
 
   const handleEdit = (qr: QRCode) => {
+    // Don't allow editing deleted QR codes
+    if (qr.deleted_at) {
+      return;
+    }
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('editingQR', JSON.stringify({
         id: qr.id,
@@ -123,6 +134,10 @@ export default function DashboardPage() {
   };
 
   const handleStartRename = (qr: QRCode) => {
+    // Don't allow renaming deleted QR codes
+    if (qr.deleted_at) {
+      return;
+    }
     setEditingNameId(qr.id);
     setEditingName(qr.name);
   };
@@ -232,9 +247,9 @@ export default function DashboardPage() {
             <Link
               href="/create/content"
               className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2 shadow-xl ${canCreateNew
-                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
-                : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-50'
-                }`}
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+                  : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-50'
+              }`}
             >
               <PlusIcon className="w-5 h-5" />
               Create New
@@ -295,11 +310,7 @@ export default function DashboardPage() {
         )}
       </main>
 
-      <footer className="py-12 px-6 border-t border-current border-opacity-5 text-center">
-        <p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${isDark ? 'opacity-30' : 'opacity-30'}`}>
-          © {new Date().getFullYear()} Workvar Pvt. Ltd.
-        </p>
-      </footer>
+      <AppFooter isDark={isDark} />
 
       <DeleteModal
         isOpen={!!confirmingDeleteId}
