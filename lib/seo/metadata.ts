@@ -15,6 +15,7 @@ const defaultKeywords = [
   'vector QR codes',
   'QR code export',
   'free QR code generator',
+  'free QR code download',
   'business QR codes',
   'marketing QR codes',
   'branded QR codes',
@@ -49,7 +50,15 @@ export const defaultMetadata: Metadata = {
         url: `${siteUrl}/og-image.png`,
         width: 1200,
         height: 630,
+        alt: `${siteName} - Professional QR Code Generator - Landing Page`,
+        type: 'image/png',
+      },
+      {
+        url: `${siteUrl}/Assets/logo-with-name.png`,
+        width: 1200,
+        height: 630,
         alt: `${siteName} - Professional QR Code Generator`,
+        type: 'image/png',
       },
     ],
   },
@@ -57,8 +66,16 @@ export const defaultMetadata: Metadata = {
     card: 'summary_large_image',
     title: `${siteName} - Professional QR Code Generator`,
     description: defaultDescription,
-    images: [`${siteUrl}/og-image.png`],
+    images: [
+      {
+        url: `${siteUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: `${siteName} - Professional QR Code Generator - Landing Page`,
+      },
+    ],
     creator: '@qrrystudio',
+    site: '@qrrystudio',
   },
   robots: {
     index: true,
@@ -88,13 +105,14 @@ export const homeMetadata: Metadata = {
   description: 'Create professional QR codes with AI-powered branding, infinite customization options, and production-ready exports. Free QR code generator with advanced design tools.',
   openGraph: {
     ...defaultMetadata.openGraph,
-    title: `${siteName} - Professional QR Code Generator`,
-    description: 'Create professional QR codes with AI-powered branding, infinite customization options, and production-ready exports.',
+    title: `${siteName} - Professional QR Code Generator | AI-Powered & Customizable`,
+    description: 'Create professional QR codes with AI-powered branding, infinite customization options, and production-ready exports. Free QR code generator with advanced design tools.',
+    url: siteUrl,
   },
   twitter: {
     ...defaultMetadata.twitter,
-    title: `${siteName} - Professional QR Code Generator`,
-    description: 'Create professional QR codes with AI-powered branding, infinite customization options, and production-ready exports.',
+    title: `${siteName} - Professional QR Code Generator | AI-Powered & Customizable`,
+    description: 'Create professional QR codes with AI-powered branding, infinite customization options, and production-ready exports. Free QR code generator with advanced design tools.',
   },
 };
 
@@ -104,9 +122,15 @@ export const pricingMetadata: Metadata = {
   description: 'Transparent pricing for QR code generation. Start free with 4 QR codes and 2 AI suggestions. Upgrade with flexible add-ons for unlimited QR codes and features.',
   openGraph: {
     ...defaultMetadata.openGraph,
-    title: 'Pricing Plans - Affordable QR Code Solutions',
-    description: 'Transparent pricing for QR code generation. Start free with 4 QR codes and 2 AI suggestions.',
+    title: 'Pricing Plans - Affordable QR Code Solutions | QRry Studio',
+    description: 'Transparent pricing for QR code generation. Start free with 4 QR codes and 2 AI suggestions. Upgrade with flexible add-ons for unlimited QR codes and features.',
     url: `${siteUrl}/pricing`,
+    type: 'website',
+  },
+  twitter: {
+    ...defaultMetadata.twitter,
+    title: 'Pricing Plans - Affordable QR Code Solutions | QRry Studio',
+    description: 'Transparent pricing for QR code generation. Start free with 4 QR codes and 2 AI suggestions.',
   },
   alternates: {
     canonical: `${siteUrl}/pricing`,
