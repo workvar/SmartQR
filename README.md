@@ -1,6 +1,6 @@
 # SmartQR - QR Code Generator
-
 A modern, feature-rich QR code generator built with Next.js, featuring AI-powered design suggestions and custom branding.
+Read the Docs: https://qrry.superdocs.cloud/
 
 ## Features
 
